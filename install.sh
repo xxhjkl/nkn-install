@@ -21,7 +21,7 @@ ulimit -n 4096
 ulimit -c unlimited
 
 # 拉取程序
-https://github.com/nknorg/nkn/releases/download/v1.0.2-beta/linux-amd64.zip
+wget https://github.com/nknorg/nkn/releases/download/v1.0.2-beta/linux-amd64.zip
 wget https://raw.githubusercontent.com/sxzcy/nkn-install/master/config.json
 unzip linux-amd64.zip
 rm -r linux-amd64.zip
@@ -46,3 +46,6 @@ nohup ./nknd -p 1234567 --no-nat > /dev/null 2>&1 &
 #输出bbr
 lsmod | grep bbr
 ./nknc info -s
+
+
+
