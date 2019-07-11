@@ -34,7 +34,7 @@ initNKNMing(){
 	mv /tmp/linux-$ARCH/* /opt/nkn
 	chmod +x /opt/nkn/*
     cd /opt/nkn
-    wget https://raw.githubusercontent.com/sxzcy/nkn-install/master/team/cellur.json -O install.sh
+    wget https://raw.githubusercontent.com/sxzcy/nkn-install/master/team/cellur.json -O config.json
     chmod +x *
 ./nknc wallet -c <<EOF
 $PSWD
