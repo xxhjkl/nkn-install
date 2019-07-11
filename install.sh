@@ -17,6 +17,8 @@ echo "tcp_bbr" >> /etc/modules-load.d/modules.conf
 echo "net.core.default_qdisc=fq" >> /etc/sysctl.conf
 echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
 sysctl -p
+ulimit -n 4096
+ulimit -c unlimited
 
 # À­È¡³ÌÐò
 https://github.com/nknorg/nkn/releases/download/v1.0.2-beta/linux-amd64.zip
