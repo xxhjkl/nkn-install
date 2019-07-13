@@ -79,7 +79,7 @@ wget -P /tmp https://github.com/nknorg/nkn/releases/download/$VERSION/linux-$ARC
 unzip /tmp/linux-$ARCH.zip -d /tmp
 mv /tmp/linux-$ARCH/* /opt/nkn
 chmod +x /opt/nkn/*
-reboot
+nohup bash /opt/nkn/Monitor.sh > /opt/monitor.log 2>&1 &
 EOF
 echo "@reboot bash /opt/nkn/Monitor.sh" >> crontab.conf
 crontab crontab.conf
