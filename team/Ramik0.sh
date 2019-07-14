@@ -13,7 +13,6 @@ getArch(){
     esac
     echo "ARCH=$ARCH"
 }
-
 getEnv(){
  if which apt >/dev/null ; then
         PG="apt"
@@ -24,7 +23,6 @@ getEnv(){
         exit 1
     fi
 }
-
 initNKNMing(){
 rm -rf /opt/nkn
 mkdir /opt/nkn
@@ -93,7 +91,6 @@ $PSWD
 $PSWD
 EOF
 }
-
 initMonitor(){
 cat <<EOF > /opt/nkn/ARCH
 $ARCH
@@ -126,7 +123,6 @@ done
 echo -e "\033[31m$(date +%F-%T) Nknd Startup failure, self checking...\033[0m"
 check
 }
-
 check(){
 cd /home/nkn
 git fetch
@@ -142,18 +138,17 @@ initWallet
 monitor
 else
 echo $(date +%F-%T) Discover the new version and update it automatically.
+rm -rf /tmp/linux-*
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 initNKN
 fi
 }
-
 downNkn(){
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 initNKN
 }
-
 initWallet(){
 cd /opt/nkn
 ./nknc wallet -c <<EOF
@@ -161,7 +156,6 @@ $PSWD
 $PSWD
 tag1234
 }
-
 initNKN(){
 if [ ! -d "/tmp/linux-$ARCH/" ]
 then
@@ -174,7 +168,10 @@ rm -rf /opt/nkn/nkn*
 rm -rf /opt/nkn/Log
 mv /tmp/linux-$ARCH/* /opt/nkn
 rm -rf /tmp/linux-*
+rm /usr/bin/nkn*
 chmod +x /opt/nkn/*
+ln -i /opt/nkn/nknd /usr/bin/nknd 
+ln -i /opt/nkn/nknc /usr/bin/nknc
 monitor
 fi
 }
@@ -185,7 +182,6 @@ EOF
 cat <<\EOF > /opt/nkn/update.sh
 #!/bin/bash
 ARCH=$(cat /opt/nkn/ARCH)
-
 check(){
 cd /home/nkn
 git fetch
@@ -193,22 +189,21 @@ OLDVER=$(nknd -v |cut -b 14-30)
 NEWVER=$(git tag | tail -1)
 if [ "$OLDVER" = "$NEWVER" ]
 then
-echo $(date +%F-%T) No updates found, delete ChainDB and restart.
+echo $(date +%F-%T) No updates found.
 exit 0
 else
 echo $(date +%F-%T) Discover the new version and update it automatically.
+rm -rf /tmp/linux-*
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 initNKN
 fi
 }
-
 downNkn(){
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 initNKN
 }
-
 initNKN(){
 if [ ! -d "/tmp/linux-$ARCH/" ]
 then
@@ -216,27 +211,30 @@ rm -rf /tmp/linux*
 echo -e "\033[31m$(date +%F-%T)Update failed, try again\033[0m"
 downNkn
 else
-killall -9 bash /opt/nkn/Monitor.sh
+kill $(ps -ef | grep Monitor.sh | grep -v grep | awk '{print $2}')
 killall -9 nknd
-echo -e "\033[32m$(date +%F-%T) Nknd Update Successful.\033[0m"
 rm -rf /opt/nkn/nkn*
 rm -rf /opt/nkn/Log
 mv /tmp/linux-$ARCH/* /opt/nkn
 rm -rf /tmp/linux-*
+rm /usr/bin/nkn*
 chmod +x /opt/nkn/*
-nohup bash /opt/nkn/Monitor.sh > /opt/monitor.log 2>&1 &
+ln -i /opt/nkn/nknd /usr/bin/nknd 
+ln -i /opt/nkn/nknc /usr/bin/nknc
+nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &
+echo -e "\033[32m$(date +%F-%T) Nknd Update Successful.\033[0m"
 fi
 }
+check
 exit 0
 EOF
 sed -i "s/tag1234/EOF/g" /opt/nkn/Monitor.sh
-echo "30 * * * * nohup bash /opt/nkn/update.sh > /opt/update.log 2>&1 &" >> crontab.conf
-echo "@reboot nohup bash /opt/nkn/Monitor.sh > /opt/monitor.log 2>&1 &" >> crontab.conf
+echo "30 * * * * nohup bash /opt/nkn/update.sh > /opt/nkn/update.log 2>&1 &" >> crontab.conf
+echo "@reboot nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &" >> crontab.conf
 crontab crontab.conf
 rm -rf crontab.conf
-nohup bash /opt/nkn/Monitor.sh > /opt/monitor.log 2>&1 &
+nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &
 }
-
 cloneNkn(){
 rm -rf /home/nkn
 cd /home
@@ -273,8 +271,7 @@ if [ ! -d "/tmp/linux-$ARCH/" ]
  echo -e "\033[32m$(date +%F-%T) Nknd Download Successful.\033[0m"
 fi
 }
-
-if [[ "$1" -eq "" ]]
+if [[ "$1" = "" ]]
 then
  addr=NKNaGgZWpoy2VrDTTkBFDbsvjrEirLcUrHpa
  getArch
@@ -284,7 +281,7 @@ then
  exit 0
 else
  head=$(echo $1 | cut -b 1-3)
- if [[ "$head" -eq "NKN" ]]
+ if [[ "$head" = "NKN" ]]
  then
   addr=$1
   getArch
