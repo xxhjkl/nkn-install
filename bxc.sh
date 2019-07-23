@@ -45,7 +45,7 @@ esac
 	then
 		apt install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
 		curl -fsSL https://download.docker.com/linux/$OS/gpg | sudo apt-key add -
-		sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+		sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/$OS $(lsb_release -cs) stable"
 		apt update -y
 		apt install docker-ce -y
 	elif [[ "$PG" == "yum" ]]
@@ -95,7 +95,6 @@ bcode=$(echo "${bcode_list}"|jq -r '.[]|.bcode'|head -1)
 MAC_ADDR=$(echo "88:93:CB$(dd bs=1 count=3 if=/dev/random 2>/dev/null |hexdump -v -e '/1 ":%02X"')")
 only_ins_network_docker_run
 }
-only_ins_network_docker_openwrt
 EMAIL=13675752119@qq.com
+only_ins_network_docker_openwrt
 sync
-
