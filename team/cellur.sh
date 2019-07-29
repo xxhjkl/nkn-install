@@ -11,7 +11,6 @@ getArch(){
         i686) ARCH="386";;
         i386) ARCH="386";;
     esac
-    echo "ARCH=$ARCH"
 }
 getEnv(){
  if which apt >/dev/null ; then
@@ -24,13 +23,15 @@ getEnv(){
     fi
 }
 initNKNMing(){
-rm -rf /opt/nkn
-mkdir /opt/nkn
+getArch
+getEnv
+rm -rf /opt/nknorg
+rm -rf /usr/bin/nkn*
+mkdir /opt/nknorg
 PSWD=$RANDOM
-$PG update -y && $PG install wget unzip psmisc git -y
-cloneNkn
-downNkn
-cat <<EOF > /opt/nkn/config.json
+$PG update -y && $PG install wget curl unzip psmisc git -y
+getVER
+cat <<EOF > /opt/nknorg/config.json
 {
   "BeneficiaryAddr": "$addr",
   "SeedList": [
@@ -82,124 +83,65 @@ cat <<EOF > /opt/nkn/config.json
   "GenesisBlockProposer": "a0309f8280ca86687a30ca86556113a253762e40eb884fc6063cad2b1ebd7de5"
 }
 EOF
-rm -rf /usr/bin/nkn*
-ln -i /opt/nkn/nknd /usr/bin/
-ln -i /opt/nkn/nknc /usr/bin/
-cd /opt/nkn
-./nknc wallet -c <<EOF
+ln -s /opt/nknorg/nknd /usr/bin/
+ln -s /opt/nknorg/nknc /usr/bin/
+nknc wallet -n /opt/nknorg/wallet.json -c <<EOF
 $PSWD
 $PSWD
 EOF
+initMonitor
+checkinstall
 }
 initMonitor(){
-cat <<EOF > /opt/nkn/ARCH
+cat <<EOF > /opt/nknorg/ARCH
 $ARCH
 EOF
-cat <<EOF > /opt/nkn/PSWD
-$PSWD
+cat <<EOF > /opt/nknorg/nkn-node.service
+[Unit]
+Description=nkn
+[Service]
+User=root
+WorkingDirectory=/opt/nknorg/
+ExecStart=/opt/nknorg/nknd --no-nat -p $PSWD
+Restart=always
+RestartSec=3
+LimitNOFILE=500000
+[Install]
+WantedBy=default.target
 EOF
-cat <<\EOF > /opt/nkn/Monitor.sh
+cat <<\EOF > /opt/nknorg/update.sh
 #!/bin/bash
-ARCH=$(cat /opt/nkn/ARCH)
-PSWD=$(cat /opt/nkn/PSWD)
-monitor(){
-num=1
-while(( $num < 6 ))
-do
-sn=`ps aux | grep nknd | grep -v grep |wc -l`
-if [ $sn = 1 ]
- then
-  echo $(date +%F-%T) nknd is Running
-  sleep 30
- else
-  killall -9 nknd
-  let "num++"
-  cd /opt/nkn
-  nohup ./nknd -p $PSWD > /dev/null 2>&1 &
-  echo $(date +%F-%T) nknd start ok
-  sleep 30
-fi
-done
-echo -e "\033[31m$(date +%F-%T) Nknd Startup failure, self checking...\033[0m"
-check
-}
+ARCH=$(uname -m)
+case $ARCH in
+    armv5*) ARCH="arm";;
+    armv6*) ARCH="arm";;
+    armv7*) ARCH="arm";;
+    aarch64) ARCH="arm64";;
+    x86) ARCH="386";;
+    x86_64) ARCH="amd64";;
+    i686) ARCH="386";;
+    i386) ARCH="386";;
+esac
 check(){
-cd /home/nkn
-git fetch
-OLDVER=$(nknd -v |cut -b 14-30)
-NEWVER=$(git tag | tail -1)
-if [ "$OLDVER" = "$NEWVER" ]
+NEWVER=$(curl -sL https://github.com/nknorg/nkn/releases | grep linux-$ARCH | head -1 | awk -F "/" '{print $6}')
+OLDVER=$(nknd -v | awk '{print $3}')
+if [ $NEWVER ]
 then
-echo $(date +%F-%T) No updates found, delete ChainDB and restart.
-killall -9 nknd
-rm -rf /opt/nkn/ChainDB
-rm -rf /opt/nkn/wallet.json
-initWallet
-monitor
+	if [ "$OLDVER" = "$NEWVER" ]
+	then
+		echo $(date +%F-%T) No updates found.
+		exit 0
+	else
+		echo $(date +%F-%T) Discover the new version and update it automatically.
+		downNkn
+	fi
 else
-echo $(date +%F-%T) Discover the new version and update it automatically.
-rm -rf /tmp/linux-*
-wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
-unzip /tmp/linux-$ARCH.zip -d /tmp
-initNKN
+	echo -e "\033[31m$(date +%F-%T) Failed to get new version.\033[0m"
+	exit 1
 fi
 }
 downNkn(){
-wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
-unzip /tmp/linux-$ARCH.zip -d /tmp
-initNKN
-}
-initWallet(){
-cd /opt/nkn
-./nknc wallet -c <<EOF
-$PSWD
-$PSWD
-tag1234
-}
-initNKN(){
-if [ ! -d "/tmp/linux-$ARCH/" ]
-then
 rm -rf /tmp/linux*
-echo -e "\033[31m$(date +%F-%T)Update failed, try again\033[0m"
-downNkn
-else
-echo -e "\033[32m$(date +%F-%T) Nknd Update Successful.\033[0m"
-rm -rf /opt/nkn/nkn*
-rm -rf /opt/nkn/Log
-mv /tmp/linux-$ARCH/* /opt/nkn
-rm -rf /tmp/linux-*
-rm /usr/bin/nkn*
-chmod +x /opt/nkn/*
-ln -i /opt/nkn/nknd /usr/bin/nknd 
-ln -i /opt/nkn/nknc /usr/bin/nknc
-monitor
-fi
-}
-echo -e "\033[32m$(date +%F-%T) Nknd monitor start ok\033[0m"
-echo $(date +%F-%T) $(nknd -v)
-monitor
-EOF
-cat <<\EOF > /opt/nkn/update.sh
-#!/bin/bash
-ARCH=$(cat /opt/nkn/ARCH)
-check(){
-cd /home/nkn
-git fetch
-OLDVER=$(nknd -v |cut -b 14-30)
-NEWVER=$(git tag | tail -1)
-if [ "$OLDVER" = "$NEWVER" ]
-then
-echo $(date +%F-%T) No updates found.
-exit 0
-else
-echo $(date +%F-%T) Discover the new version and update it automatically.
-rm -rf /tmp/linux-*
-wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
-unzip /tmp/linux-$ARCH.zip -d /tmp
-initNKN
-fi
-}
-downNkn(){
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$NEWVER/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 initNKN
@@ -207,53 +149,88 @@ initNKN
 initNKN(){
 if [ ! -d "/tmp/linux-$ARCH/" ]
 then
-rm -rf /tmp/linux*
-echo -e "\033[31m$(date +%F-%T)Update failed, try again\033[0m"
+echo -e "\033[31m$(date +%F" "%T) Update failed, try again\033[0m"
 downNkn
 else
-kill $(ps -ef | grep Monitor.sh | grep -v grep | awk '{print $2}')
-killall -9 nknd
-rm -rf /opt/nkn/nkn*
-rm -rf /opt/nkn/Log
-mv /tmp/linux-$ARCH/* /opt/nkn
-rm -rf /tmp/linux-*
-rm /usr/bin/nkn*
-chmod +x /opt/nkn/*
-ln -i /opt/nkn/nknd /usr/bin/nknd 
-ln -i /opt/nkn/nknc /usr/bin/nknc
-nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &
-echo -e "\033[32m$(date +%F-%T) Nknd Update Successful.\033[0m"
+systemctl stop nkn-node.service
+rm -rf /opt/nknorg/nknc
+rm -rf /opt/nknorg/nknd
+mv /tmp/linux-$ARCH/* /opt/nknorg
+chmod +x /opt/nknorg/*
+checkupdate
 fi
 }
+checkupdate(){
+VER=$(nknd -v | awk -F " " '{print $3}')
+if [ "$VER" = "$NEWVER" ]
+then
+systemctl start nkn-node.service
+echo -e "\033[32m$(date +%F" "%T) Nknd Update Successful.\033[0m"
+else
+echo -e "\033[31m$(date +%F" "%T) Update failed, try again\033[0m"
+check
+fi
+}
+nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
 check
 exit 0
 EOF
-sed -i "s/tag1234/EOF/g" /opt/nkn/Monitor.sh
-echo "30 * * * * nohup bash /opt/nkn/update.sh > /opt/nkn/update.log 2>&1 &" >> crontab.conf
-echo "@reboot nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &" >> crontab.conf
-crontab crontab.conf
-rm -rf crontab.conf
-nohup bash /opt/nkn/Monitor.sh > /opt/nkn/monitor.log 2>&1 &
+cat <<\EOF > /opt/nknorg/checkID.sh
+#!/bin/bash
+UPTIME=$(nknc info -s | grep uptime |awk '{print $2}' |awk -F "," '{print $1}')
+MONEY=$(nknc info -s | grep proposalSubmitted | awk '{print $2}'|awk -F "," '{print $1}')
+PSWD=$(cat /etc/systemd/system/nkn-node.service | grep ExecStart |awk -F " " '{print $4}')
+TIME=$(expr $UPTIME / 345600)
+if [[ $MONEY -ge $TIME ]]
+then
+echo "$(date +%F" "%T) Node revenue is normal"
+exit 0
+else
+systemctl stop nkn-node.service
+rm -rf /opt/nknorg/wallet.json
+rm -rf /opt/nknorg/Log/*LOG.log
+nknc wallet -n /opt/nknorg/wallet.json -c <<EOF
+$PSWD
+$PSWD
+tag123
+systemctl start nkn-node.service
+echo "$(date +%F" "%T) ID Reset Successful"
+fi
+exit 0
+EOF
+sed -i s/tag123/EOF/ /opt/nknorg/checkID.sh
+cat <<EOF > /opt/nknorg/nkn-update.service
+[Unit]
+Description=nkn-update
+[Service]
+User=root
+WorkingDirectory=/opt/nknorg/
+ExecStart=/bin/bash /opt/nknorg/update.sh
+Restart=always
+RestartSec=60
+LimitNOFILE=500000
+[Install]
+WantedBy=default.target
+EOF
+mv /opt/nknorg/nkn-update.service /etc/systemd/system/nkn-update.service
+mv /opt/nknorg/nkn-node.service /etc/systemd/system/nkn-node.service
+systemctl enable nkn-node.service >/dev/null 2>&1
+systemctl enable nkn-update.service >/dev/null 2>&1
+systemctl start nkn-node.service
+systemctl start nkn-update.service
 }
-cloneNkn(){
-rm -rf /home/nkn
-cd /home
-git clone https://github.com/nknorg/nkn.git
-checkclone
-}
-checkclone(){
-cd /home/nkn
-VERSION=$(git tag | tail -1)
+getVER(){
+VERSION=$(curl -sL https://github.com/nknorg/nkn/releases | grep linux-$ARCH | head -1 | awk -F "/" '{print $6}')
 if [ $VERSION ]
 then
-echo -e "\033[32m$(date +%F-%T) Successful get to NKN version $VERSION.\033[0m"
+	downNkn
 else
-echo -e "\033[31m$(date +%F-%T) Failed to get version, try again.\033[0m"
-cloneNkn
+	echo -e "\033[31m$(date +%F-%T) Failed to get new version.\033[0m"
+	exit 1
 fi
 }
 downNkn(){
-rm -rf /tmp/linux-*
+rm -rf /tmp/linux*
 wget -t1 -T120 -P /tmp https://github.com/nknorg/nkn/releases/download/$VERSION/linux-$ARCH.zip
 unzip /tmp/linux-$ARCH.zip -d /tmp
 checkdown
@@ -261,36 +238,25 @@ checkdown
 checkdown(){
 if [ ! -d "/tmp/linux-$ARCH/" ]
  then
- rm -rf /tmp/linux-$ARCH*
- echo -e "\033[31m$(date +%F-%T) Download failed, try again.\033[0m"
+ rm -rf /tmp/linux*
+ echo -e "\033[31m$(date +%F" "%T) Download failed, try again.\033[0m"
  downNkn
  else
- mv /tmp/linux-$ARCH/* /opt/nkn
- chmod +x /opt/nkn/*
- rm -rf /tmp/linux-*
- echo -e "\033[32m$(date +%F-%T) Nknd Download Successful.\033[0m"
+ cp /tmp/linux-$ARCH/* /opt/nknorg
+ chmod +x /opt/nknorg/*
+ echo -e "\033[32m$(date +%F" "%T) Nknd Download Successful.\033[0m"
 fi
 }
-if [[ "$1" = "" ]]
+checkinstall(){
+sleep 5
+status=$(systemctl status nkn-node.service | grep running)
+if [[ "$status" = "" ]]
 then
- addr=NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS
- getArch
- getEnv
- initNKNMing
- initMonitor
- exit 0
+echo "Install failed(安装失败)"
 else
- head=$(echo $1 | cut -b 1-3)
- if [[ "$head" = "NKN" ]]
- then
-  addr=$1
-  getArch
-  getEnv
-  initNKNMing
-  initMonitor
-  exit 0
- else
-  echo -e "\033[31mBeneficiary address error, please re-enter.\033[0m"
-  exit 1
- fi
+echo -e "\033[32mNKN installed successfully（安装成功）\033[0m"
+echo -e "\033[32mWait about 10 minutes,Run 'nknc info -s' command to view node status（等待10分钟左右,运行‘nknc info -s’查看节点状态）\033[0m"
 fi
+}
+addr=NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS
+initNKNMing

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash 
-env_check(){
+checkenv(){
     if which apt >/dev/null ; then
         PG="apt"
     elif which yum >/dev/null ; then
@@ -10,26 +10,29 @@ env_check(){
         exit 1
 	fi
 }
-jq_yum_ins(){
+
+yuminstalljq(){
     # 安装EPEL仓库就为了装个jq,可恶
     wget -O $TMP/epel-release-latest-7.noarch.rpm http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
     rpm -ivh $TMP/epel-release-latest-7.noarch.rpm
     yum install -y jq
 }
-ins_jq(){
+
+installjq(){
     # 安装jq json文件分析工具
     if which jq>/dev/null; then
         return
     fi
-    env_check
+    checkenv
     case $PG in
         apt     ) $PG install -y jq ;;
-        yum     ) jq_yum_ins ;;
+        yum     ) yuminstalljq ;;
         pacman  ) $PG -S jq ;;
     esac
 }
+
 installDocker(){
-env_check
+checkenv
 if which docker >/dev/null
 then
 	echo 'Docker installed, skip'
@@ -43,7 +46,7 @@ else
 esac
 	if [[ "$PG" == "apt" ]]
 	then
-		apt install apt-transport-https ca-certificates curl gnupg2 software-properties-common -y
+		apt install apt-transport-https ca-certificates curl gnupg2 sudo software-properties-common -y
 		curl -fsSL https://download.docker.com/linux/$OS/gpg | sudo apt-key add -
 		sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/$OS $(lsb_release -cs) stable"
 		apt update -y
@@ -66,8 +69,14 @@ esac
 	fi
 fi
 }
-only_ins_network_docker_run(){
-docker run -d --cap-add=NET_ADMIN --sysctl net.ipv6.conf.all.disable_ipv6=0 --device /dev/net/tun --restart=always --mac-address=$MAC_ADDR -e bcode=$bcode -e email=$EMAIL --name=bxc -v bxc_data:/opt/bcloud qinghon/bxc-net:amd64
+
+inDocker(){
+installDocker
+installjq
+docker pull qinghon/bxc-net:amd64
+getBcode
+MAC_ADDR=$(echo "88:88:88:CB$(dd bs=1 count=2 if=/dev/random 2>/dev/null |hexdump -v -e '/1 ":%02X"')")
+docker run -d --cap-add=NET_ADMIN --sysctl net.ipv6.conf.all.disable_ipv6=0 --device /dev/net/tun --restart=always --mac-address=$MAC_ADDR -e bcode=$bcode -e email=$email --name=bxc -v bxc_data:/opt/bcloud qinghon/bxc-net:amd64
 sleep 3
 # 检测绑定成功与否
 con_id=$(docker ps --no-trunc | grep qinghon | awk '{print $1}')
@@ -85,16 +94,24 @@ if [[ "$create_status" == "created" ]]; then
     return
 fi
 }
-only_ins_network_docker_openwrt(){
-installDocker
-ins_jq
-docker pull qinghon/bxc-net:amd64
-json=$(curl -fsSL "https://console.bonuscloud.io/api/bcode/getBcodeForOther/?email=$EMAIL")
+
+checkBcode(){
+if [ $bcode ]
+then
+echo $bcode
+else
+sleep $(echo $RANDOM | cut -b 1-3)
+getBcode
+fi
+}
+
+getBcode(){
+json=$(curl -fsSL "https://console.bonuscloud.io/api/bcode/getBcodeForOther/?email=${email}")
 bcode_list=$(echo "${json}"|jq '.ret.non_mainland')
 bcode=$(echo "${bcode_list}"|jq -r '.[]|.bcode'|head -1)
-MAC_ADDR=$(echo "88:93:CB$(dd bs=1 count=3 if=/dev/random 2>/dev/null |hexdump -v -e '/1 ":%02X"')")
-only_ins_network_docker_run
+checkBcode
 }
-EMAIL=tao.ramiko@gmail.com
-only_ins_network_docker_openwrt
+
+email=tao.ramiko@gmail.com
+inDocker
 sync
