@@ -25,7 +25,7 @@ getEnv(){
 initNKNMing(){
 getArch
 getEnv
-rm -rf /opt/nknorg
+rm -rf /opt/nk*
 rm -rf /usr/bin/nkn*
 mkdir /opt/nknorg
 PSWD=$RANDOM
