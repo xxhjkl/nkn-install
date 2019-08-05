@@ -34,6 +34,7 @@ getVER
 cat <<EOF > /opt/nknorg/config.json
 {
   "BeneficiaryAddr": "$addr",
+  "SyncBatchWindowSize":16,
   "SeedList": [
     "http://mainnet-seed-0001.nkn.org:30003",
     "http://mainnet-seed-0002.nkn.org:30003",
