@@ -27,7 +27,7 @@ getArch
 getEnv
 rm -rf /opt/nknorg
 rm -rf /usr/bin/nkn*
-mkdir /opt/nknorg
+mkdir -p /opt/nknorg
 PSWD=$RANDOM
 $PG update -y && $PG install wget curl unzip psmisc git -y
 getVER
