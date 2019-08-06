@@ -40,7 +40,7 @@ else
     OS=$(cat /etc/issue |head -1 |awk -F " " '{print $1}' )
 	case $OS in
 	Ubuntu*) OS="ubuntu";;
-	Centos*) OS="centos";;
+	CentOS*) OS="centos";;
 	Debian*) OS="debian";;
 	*) echo -e "\033[31Run the script again after installing docker manually\033[0m"&&exit 1;;
 esac
@@ -79,7 +79,7 @@ MAC_ADDR=$(echo "88:88:88:CB$(dd bs=1 count=2 if=/dev/random 2>/dev/null |hexdum
 docker run -d --cap-add=NET_ADMIN --sysctl net.ipv6.conf.all.disable_ipv6=0 --device /dev/net/tun --restart=always --mac-address=$MAC_ADDR -e bcode=$bcode -e email=$email --name=bxc -v bxc_data:/opt/bcloud qinghon/bxc-net:amd64
 sleep 3
 # 检测绑定成功与否
-con_id=$(docker ps --no-trunc | grep qinghon | awk '{print $1}')
+con_id=$(docker ps -a --no-trunc | grep qinghon | awk '{print $1}')
 fail_echo=$(docker echos "${con_id}" 2>&1 |grep 'bonud fail'|head -n 1)
 if [[ -n "${fail_echo}" ]]; then
     echo "bound fail\n${fail_echo}\n"
@@ -89,7 +89,7 @@ if [[ -n "${fail_echo}" ]]; then
 fi
 create_status=$(docker container inspect "${con_id}" --format "{{.State.Status}}")
 if [[ "$create_status" == "created" ]]; then
-    echowarn "Delete can not run container\n"
+    echo "Delete can not run container\n"
     docker container rm "${con_id}"
     return
 fi
@@ -115,4 +115,3 @@ checkBcode
 email=sxzcy1993@gmail.com
 inDocker
 sync
-
