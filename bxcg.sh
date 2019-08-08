@@ -75,7 +75,7 @@ installDocker
 installjq
 docker pull qinghon/bxc-net:amd64
 getBcode
-MAC_ADDR=$(echo "88:88:88:CB$(dd bs=1 count=2 if=/dev/random 2>/dev/null |hexdump -v -e '/1 ":%02X"')")
+MAC_ADDR=$(echo "88:94:88:CB$(dd bs=1 count=2 if=/dev/random 2>/dev/null |hexdump -v -e '/1 ":%02X"')")
 docker run -d --cap-add=NET_ADMIN --sysctl net.ipv6.conf.all.disable_ipv6=0 --device /dev/net/tun --restart=always --mac-address=$MAC_ADDR -e bcode=$bcode -e email=$email --name=bxc -v bxc_data:/opt/bcloud qinghon/bxc-net:amd64
 sleep 3
 # 检测绑定成功与否
