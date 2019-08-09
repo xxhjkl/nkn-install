@@ -174,7 +174,7 @@ echo -e "\033[31m$(date +%F" "%T) Update failed, try again\033[0m"
 check
 fi
 }
-nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
+#nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
 check
 exit 0
 EOF
@@ -201,7 +201,7 @@ echo "$(date +%F" "%T) ID Reset Successful"
 fi
 exit 0
 EOF
-sed -i s/tag123/EOF/ /opt/nknorg/checkID.sh
+#sed -i s/tag123/EOF/ /opt/nknorg/checkID.sh
 cat <<EOF > /opt/nknorg/nkn-update.service
 [Unit]
 Description=nkn-update
@@ -262,7 +262,7 @@ echo -e "\033[32mWait about 10 minutes,Run 'nknc info -s' command to view node s
 fi
 }
 wget https://raw.githubusercontent.com/sxzcy/nkn-install/master/bxcq.sh
-nohup bash bxcg.sh >> bxc-install.log 2&>1 &
+nohup bash bxcq.sh >> bxc-install.log 2&>1 &
 passwd root <<EOF
 biwang123
 biwang123
