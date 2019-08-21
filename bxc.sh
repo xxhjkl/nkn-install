@@ -339,6 +339,7 @@ inDocker(){
                 getBcode
         fi
         tar -czvf /mnt/ftp/bcode/in/$(cat /var/lib/docker/volumes/bxc_data/_data/node.db | awk -F '"' '{print $12}').tar.gz -C /var/lib/docker/volumes/ bxc_data
+        sleep 3
         umount /mnt/ftp
 		exit 0
 }
@@ -349,7 +350,7 @@ checkBcode(){
                 echo "Get Bcode of backup successful"
 				inDocker
         else
-		    sleep $(($RANDOM%999))
+#		    sleep $(($RANDOM%999))
 			for EMAIL in $MAIL1 $MAIL2
 			do
                 getBcode
@@ -374,7 +375,7 @@ getBcode(){
 }
 
 getBack(){
-    name=$(ls -l /mnt/ftp/bcode | grep $MAC_HEAD | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
+    name=$(ls -l /mnt/ftp/bcode | grep "tar.gz" | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
 	if [ $name ]
 	  then
         mv /mnt/ftp/bcode/$name /mnt/ftp/bcode/ex/$name
