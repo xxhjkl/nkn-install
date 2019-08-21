@@ -350,7 +350,7 @@ checkBcode(){
                 echo "Get Bcode of backup successful"
 				inDocker
         else
-#		    sleep $(($RANDOM%999))
+		    sleep $(($RANDOM%999))
 			for EMAIL in $MAIL1 $MAIL2
 			do
                 getBcode
