@@ -173,7 +173,7 @@ echo -e "\033[31m$(date +%F" "%T) Update failed, try again\033[0m"
 check
 fi
 }
-nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
+#nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
 check
 exit 0
 EOF
