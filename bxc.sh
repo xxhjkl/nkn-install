@@ -26,7 +26,7 @@ initNKNMing(){
 initEnv
 getArch
 getEnv
-$PG update -y && $PG curlftpfs tar install wget curl unzip psmisc git -y
+$PG update -y && $PG install curlftpfs tar wget curl unzip psmisc git -y
 curlftpfs -o codepage=gbk $FTP /mnt/ftp
 rm -rf /opt/nknorg
 rm -rf /usr/bin/nkn*
@@ -334,7 +334,7 @@ checkBcode(){
 				inDocker
         else
 		    sleep $(($RANDOM%999))
-			for EMAIL in MAIL1 MAIL2
+			for EMAIL in $MAIL1 $MAIL2
 			do
                 getBcode
 			done
