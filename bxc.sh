@@ -23,19 +23,19 @@ getEnv(){
     fi
 }
 initNKNMing(){
+initEnv
 getArch
 getEnv
-$PG update && $PG install curlftpfs tar -y
-mkdir /mnt/ftp
+$PG update -y && $PG curlftpfs tar install wget curl unzip psmisc git -y
 curlftpfs -o codepage=gbk $FTP /mnt/ftp
 rm -rf /opt/nknorg
 rm -rf /usr/bin/nkn*
 mkdir -p /opt/nknorg
-$PG update -y && $PG install wget curl unzip psmisc git -y
 getVER
 cat <<EOF > /opt/nknorg/config.json
 {
-  "BeneficiaryAddr": "$addr",
+  "BeneficiaryAddr": "$OADDR",
+  "RegisterIDTxnFee": 1000,
   "TxPoolTotalTxCap": 1000,
   "TxPoolMaxMemorySize": 8,
   "SeedList": [
@@ -89,30 +89,13 @@ cat <<EOF > /opt/nknorg/config.json
 EOF
 ln -s /opt/nknorg/nknd /usr/bin/
 ln -s /opt/nknorg/nknc /usr/bin/
-mkdir -p /mnt/ftp/nkn/ex
-wallet=$(ls -l /mnt/ftp/nkn | grep json | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
-if [ $wallet ]
-  then
-    mv /mnt/ftp/nkn/$wallet /mnt/ftp/nkn/ex/$wallet
-    cp /mnt/ftp/nkn/ex/$wallet /tmp/$wallet
-    PSWD=$(echo $wallet |awk -F "-" '{print $3}' |awk -F "." '{print $1}')
-    mv /tmp/$wallet /opt/nknorg/wallet.json
-else
 PSWD=$RANDOM
-nknc wallet -n /opt/nknorg/wallet.json -c <<EOF
-$PSWD
-$PSWD
-EOF
-echo `cat /opt/nknorg/wallet.json  |awk -F '"' '{print $18}'` >> /tmp/`cat /opt/nknorg/wallet.json  |awk -F '"' '{print $18}'`
-mv /tmp/`cat /opt/nknorg/wallet.json  |awk -F '"' '{print $18}'` /mnt/ftp/nkn/wallet
-fi
+addr=$(nknc wallet -n /opt/nknorg/wallet.json -c -p $PSWD | awk 'NR==3{print $1}')
+mkdir /mnt/ftp/nkn/wallet/$addr
 initMonitor
 checkinstall
 }
 initMonitor(){
-cat <<EOF > /opt/nknorg/ARCH
-$ARCH
-EOF
 cat <<EOF > /opt/nknorg/nkn-node.service
 [Unit]
 Description=nkn
@@ -248,6 +231,7 @@ echo "Install failed(安装失败)"
 else
 echo -e "\033[32mNKN installed successfully（安装成功）\033[0m"
 echo -e "\033[32mWait about 10 minutes,Run 'nknc info -s' command to view node status（等待10分钟左右,运行‘nknc info -s’查看节点状态）\033[0m"
+umount /mnt/ftp
 fi
 }
 BXCinstall(){
@@ -339,7 +323,6 @@ inDocker(){
                 getBcode
         fi
         tar -czvf /mnt/ftp/bcode/in/$(cat /var/lib/docker/volumes/bxc_data/_data/node.db | awk -F '"' '{print $12}').tar.gz -C /var/lib/docker/volumes/ bxc_data
-        sleep 3
         umount /mnt/ftp
 		exit 0
 }
@@ -351,7 +334,7 @@ checkBcode(){
 				inDocker
         else
 		    sleep $(($RANDOM%999))
-			for EMAIL in $MAIL1 $MAIL2
+			for EMAIL in MAIL1 MAIL2
 			do
                 getBcode
 			done
@@ -375,15 +358,15 @@ getBcode(){
 }
 
 getBack(){
-    name=$(ls -l /mnt/ftp/bcode | grep "tar.gz" | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
+    name=$(ls -l /mnt/ftp/bcode | grep $MAC_HEAD | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
 	if [ $name ]
 	  then
         mv /mnt/ftp/bcode/$name /mnt/ftp/bcode/ex/$name
         cp /mnt/ftp/bcode/ex/$name /tmp/$name
         tar -zxvf /tmp/$name -C /var/lib/docker/volumes/
-        bcode=$(cat /var/lib/docker/volumes/bxc_data/_data/node.db |awk -F '"' '{print $4}')
-		email=$(cat /var/lib/docker/volumes/bxc_data/_data/node.db |awk -F '"' '{print $8}')
-        MAC_ADDR=$(cat /var/lib/docker/volumes/bxc_data/_data/node.db |awk -F '"' '{print $12}' )
+        bcode=$(cat /var/lib/docker/volumes/bxc_data/_data/node.db |jq .bcode |sed s/\"//g)
+		email=$( cat /var/lib/docker/volumes/bxc_data/_data/node.db |jq .email |sed s/\"//g)
+        MAC_ADDR=$(cat /var/lib/docker/volumes/bxc_data/_data/node.db |jq .mac_address |sed s/\"//g)
         checkBcode
 	  else
 		checkBcode
@@ -397,37 +380,37 @@ installDocker
 installjq
 $PG update && $PG install curlftpfs tar -y
 umount /mnt/ftp
+sleep 3
 rm -rf /mnt/ftp
 mkdir -p /mnt/ftp
 curlftpfs -o codepage=gbk $FTP /mnt/ftp
-mkdir -p /mnt/ftp/bcode/in
-mkdir -p /mnt/ftp/bcode/ex
 docker pull qinghon/bxc-net:amd64
 getBack
 sync
 EOF
 }
-FTP="ftp://biwang:biwang123@ramiko.me"
+initEnv(){
 umount /mnt/ftp
 rm -rf /mnt/ftp
-passwd root <<EOF
-biwang123
-biwang123
-EOF
-if [[ "$(nknc info -s | grep uptime)" ]]
+mkdir /mnt/ftp
+}
+FTP="ftp://biwang:biwang123@ramiko.me"
+if [[ `ps -e | grep nknd` ]]
 then
 echo "NKN is running, skip"
 else
 systemctl stop nkn-node.service 
-addr="NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS"
+OADDR="NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS"
 initNKNMing
 fi
-if [[ "$(docker ps -a | grep bxc)" ]]
-then 
+if [[ `docker container inspect bxc --format "{{.State.Status}}"` == running ]]
+then
 echo "Bcloud is running, skip"
 else
 kill `ps aux | grep bxc_install.sh | grep -v grep | awk '{print $2}'`
-rm -rf /opt/bcloud/bxc_install.log 
+rm -rf /opt/bcloud
+docker stop bxc
+docker rm bxc
 BXCinstall
 nohup bash /opt/bcloud/bxc_install.sh >> /opt/bcloud/bxc_install.log 2>&1 &
 fi
