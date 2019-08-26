@@ -358,7 +358,7 @@ getBcode(){
 }
 
 getBack(){
-    name=$(ls -l /mnt/ftp/bcode | grep $MAC_HEAD | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
+    name=$(ls -l /mnt/ftp/bcode | grep tar.gz | head -`echo $((RANDOM%9))` | tail -1 |awk '{print $9}')
 	if [ $name ]
 	  then
         mv /mnt/ftp/bcode/$name /mnt/ftp/bcode/ex/$name
