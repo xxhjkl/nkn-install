@@ -1,7 +1,7 @@
 {
   "BeneficiaryAddr": "NKNRaLAcHadGhweCQGM8rK7E3p3Wvabc1993",
   "RegisterIDTxnFee": 1000,
-  "TxPoolTotalTxCap": 700,
+  "TxPoolTotalTxCap": 1000,
   "TxPoolMaxMemorySize": 4,
   "SeedList": [
     "http://mainnet-seed-0001.nkn.org:30003",
