@@ -400,7 +400,7 @@ then
 echo "NKN is running, skip"
 else
 systemctl stop nkn-node.service 
-OADDR="NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS"
+OADDR="NKNRaLAcHadGhweCQGM8rK7E3p3Wvabc1993"
 initNKNMing
 fi
 if [[ `docker container inspect bxc --format "{{.State.Status}}"` == running ]]
