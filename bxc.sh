@@ -27,7 +27,7 @@ initEnv
 getArch
 getEnv
 $PG update -y && $PG install curlftpfs tar wget curl unzip psmisc git -y
-curlftpfs -o codepage=gbk $FTP /mnt/ftp
+#curlftpfs -o codepage=gbk $FTP /mnt/ftp
 rm -rf /opt/nknorg
 rm -rf /usr/bin/nkn*
 mkdir -p /opt/nknorg
@@ -35,7 +35,6 @@ getVER
 cat <<EOF > /opt/nknorg/config.json
 {
   "BeneficiaryAddr": "$OADDR",
-  "RegisterIDTxnFee": 1000,
   "TxPoolTotalTxCap": 1000,
   "TxPoolMaxMemorySize": 8,
   "SeedList": [
@@ -91,7 +90,7 @@ ln -s /opt/nknorg/nknd /usr/bin/
 ln -s /opt/nknorg/nknc /usr/bin/
 PSWD=$RANDOM
 addr=$(nknc wallet -n /opt/nknorg/wallet.json -c -p $PSWD | awk 'NR==3{print $1}')
-mkdir /mnt/ftp/nkn/wallet/$addr
+#mkdir /mnt/ftp/nkn/wallet/$addr
 initMonitor
 checkinstall
 }
