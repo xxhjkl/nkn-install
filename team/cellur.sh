@@ -23,17 +23,18 @@ getEnv(){
     fi
 }
 initNKNMing(){
+initEnv
 getArch
 getEnv
+$PG update -y && $PG install curlftpfs tar wget curl unzip psmisc git -y
+#curlftpfs -o codepage=gbk $FTP /mnt/ftp
 rm -rf /opt/nknorg
 rm -rf /usr/bin/nkn*
 mkdir -p /opt/nknorg
-PSWD=$RANDOM
-$PG update -y && $PG install wget curl unzip psmisc git -y
 getVER
 cat <<EOF > /opt/nknorg/config.json
 {
-  "BeneficiaryAddr": "$addr",
+  "BeneficiaryAddr": "$OADDR",
   "TxPoolTotalTxCap": 1000,
   "TxPoolMaxMemorySize": 8,
   "SeedList": [
@@ -87,17 +88,13 @@ cat <<EOF > /opt/nknorg/config.json
 EOF
 ln -s /opt/nknorg/nknd /usr/bin/
 ln -s /opt/nknorg/nknc /usr/bin/
-nknc wallet -n /opt/nknorg/wallet.json -c <<EOF
-$PSWD
-$PSWD
-EOF
+PSWD=$RANDOM
+addr=$(nknc wallet -n /opt/nknorg/wallet.json -c -p $PSWD | awk 'NR==3{print $1}')
+#mkdir /mnt/ftp/nkn/wallet/$addr
 initMonitor
 checkinstall
 }
 initMonitor(){
-cat <<EOF > /opt/nknorg/ARCH
-$ARCH
-EOF
 cat <<EOF > /opt/nknorg/nkn-node.service
 [Unit]
 Description=nkn
@@ -138,7 +135,7 @@ then
 		downNkn
 	fi
 else
-	echo -e "\033[31m$(date +%F-%T) Failed to get new version.\033[0m"
+	echo -e "\033[31m$(date +%F-%T) Failed to get NKN version,Checking network please.\033[0m"
 	exit 1
 fi
 }
@@ -173,34 +170,9 @@ echo -e "\033[31m$(date +%F" "%T) Update failed, try again\033[0m"
 check
 fi
 }
-#nohup bash /opt/nknorg/checkID.sh >> /opt/nknorg/Log/checkID.log 2>&1 &
 check
 exit 0
 EOF
-cat <<\EOF > /opt/nknorg/checkID.sh
-#!/bin/bash
-UPTIME=$(nknc info -s | grep uptime |awk '{print $2}' |awk -F "," '{print $1}')
-MONEY=$(nknc info -s | grep proposalSubmitted | awk '{print $2}'|awk -F "," '{print $1}')
-PSWD=$(cat /etc/systemd/system/nkn-node.service | grep ExecStart |awk -F " " '{print $4}')
-TIME=$(expr $UPTIME / 345600)
-if [[ $MONEY -ge $TIME ]]
-then
-echo "$(date +%F" "%T) Node revenue is normal"
-exit 0
-else
-systemctl stop nkn-node.service
-rm -rf /opt/nknorg/wallet.json
-rm -rf /opt/nknorg/Log/*LOG.log
-nknc wallet -n /opt/nknorg/wallet.json -c <<EOF
-$PSWD
-$PSWD
-tag123
-systemctl start nkn-node.service
-echo "$(date +%F" "%T) ID Reset Successful"
-fi
-exit 0
-EOF
-#sed -i s/tag123/EOF/ /opt/nknorg/checkID.sh
 cat <<EOF > /opt/nknorg/nkn-update.service
 [Unit]
 Description=nkn-update
@@ -227,7 +199,7 @@ if [ $VERSION ]
 then
 	downNkn
 else
-	echo -e "\033[31m$(date +%F-%T) Failed to get new version.\033[0m"
+	echo -e "\033[31m$(date +%F-%T) Failed to get version,Checking network please.\033[0m"
 	exit 1
 fi
 }
@@ -260,10 +232,12 @@ echo -e "\033[32mNKN installed successfully（安装成功）\033[0m"
 echo -e "\033[32mWait about 10 minutes,Run 'nknc info -s' command to view node status（等待10分钟左右,运行‘nknc info -s’查看节点状态）\033[0m"
 fi
 }
-
-passwd root <<EOF
-biwang123
-biwang123
-EOF
-addr=NKNERNXJBCsSNPPUm3wLRCvMJwatEwXGJmQS
+if [[ `ps -e | grep nknd` ]]
+then
+echo "NKN is running, skip"
+else
+systemctl stop nkn-node.service 
+OADDR="NKNRaLAcHadGhweCQGM8rK7E3p3Wvabc1993"
 initNKNMing
+fi
+sync
