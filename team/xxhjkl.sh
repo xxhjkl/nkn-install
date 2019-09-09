@@ -34,6 +34,8 @@ getVER
 cat <<EOF > /opt/nknorg/config.json
 {
   "BeneficiaryAddr": "$addr",
+  "SyncBatchWindowSize": 64,
+  "LogLevel": 4,
   "TxPoolTotalTxCap": 1000,
   "TxPoolMaxMemorySize": 8,
   "SeedList": [
