@@ -715,7 +715,7 @@ getBack(){
 	fi
 	checkBcode
 }
-FTP="ftp://biwang:biwang123@ramiko.me"
+FTP="ftp://cellur:biwang123@129.213.53.144:2222"
 MAC_HEAD="88:93"
 MAIL1="sxzcy1993@gmail.com"
 MAIL2="13675752119@qq.com"
