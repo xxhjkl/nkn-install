@@ -217,8 +217,7 @@ initNKN(){
 	else
 		rm -rf /opt/nknorg/nknc
 		rm -rf /opt/nknorg/nknd
-		rm -rf /opt/nknorg/web
-		cp -rf /tmp/linux-$ARCH/* /opt/nknorg
+		cp -rf /tmp/linux-$ARCH/nkn* /opt/nknorg
 		rm -rf /tmp/linux*
 		chmod +x /opt/nknorg/*
 		restartDocker
@@ -230,10 +229,8 @@ restartDocker(){
 	do
 		rm -rf /opt/nknorg/docker/$line/nknc
 		rm -rf /opt/nknorg/docker/$line/nknd
-		rm -rf /opt/nknorg/docker/$line/web
 		cp -rf /opt/nknorg/nknc /opt/nknorg/docker/$line/.
 		cp -rf /opt/nknorg/nknd /opt/nknorg/docker/$line/.
-		cp -rf /opt/nknorg/web /opt/nknorg/docker/$line/.
 		docker restart $line
 	done
 }
@@ -473,8 +470,7 @@ initNKN(){
 		systemctl stop nkn-node.service
 		rm -rf /opt/nknorg/nknc
 		rm -rf /opt/nknorg/nknd
-		rm -rf /opt/nknorg/web
-		cp -rf /tmp/linux-$ARCH/* /opt/nknorg
+		cp -rf /tmp/linux-$ARCH/nkn* /opt/nknorg
 		chmod +x /opt/nknorg/*
 		checkupdate
 	fi
@@ -545,7 +541,7 @@ then
 	killall -9 wget >>/dev/null 2>&1
 	downNkn
 else
-	cp -rf /tmp/linux-$ARCH/* /opt/nknorg >>/dev/null 2>&1
+	cp -rf /tmp/linux-$ARCH/nkn* /opt/nknorg >>/dev/null 2>&1
 	chmod +x /opt/nknorg/*
 	ln -s /opt/nknorg/nknd /usr/bin/nknd >>/dev/null 2>&1
 	ln -s /opt/nknorg/nknc /usr/bin/nknc >>/dev/null 2>&1
@@ -718,14 +714,33 @@ getBack(){
 FTP="ftp://cellur:biwang123@129.213.53.144:2222"
 MAC_HEAD="88:93"
 MAIL1="sxzcy1993@gmail.com"
-MAIL2="13675752119@qq.com"
+MAIL2="sxzcy1993@gmail.com"
 checkenv
 $PG update && $PG install curlftpfs tar -y
-umount /mnt/ftp
-sleep 3
-rm -rf /mnt/ftp
-mkdir -p /mnt/ftp
-curlftpfs -o codepage=gbk $FTP /mnt/ftp
+if [[ -d /mnt/ftp/bcode ]]
+then
+ echo "FTP has been mounted, skipped"
+else
+ if [[ `df -h | grep ftp` ]]
+ then
+  echo "Attempt to Unmount FTP"
+  umout /mnt/ftp
+  sleep 3
+ elif [[ `df -h | grep ftp` ]]
+ then
+  echo "Unmount failed"
+  exit 1
+ fi
+ rm -rf /mnt/ftp
+ mkdir -p /mnt/ftp
+ curlftpfs -o codepage=gbk $FTP /mnt/ftp
+ sleep 3
+ if [[ ! -d /mnt/ftp/bcode ]]
+ then
+  echo "FTP mount failure"
+  exit 1
+ fi
+fi
 installjq
 installDocker
 docker pull qinghon/bxc-net:amd64
@@ -743,7 +758,7 @@ else
 addr="NKNRaLAcHadGhweCQGM8rK7E3p3Wvabc1993"
 initNKNMing
 fi
-if [[ `ps aux | grep bxc |grep -v grep` ]]
+if [[ `ps aux | grep bxc-network |grep -v grep` ]]
 then
 echo "Bcloud is running, skip"
 else
